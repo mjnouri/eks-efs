@@ -40,8 +40,10 @@ Deploy a sample containerized app using EFS storage to EKS
     to do:
 - variable out things like env, eks worker node instance type, etc?
 - test mount points util on wordpress image, or find another image that has what you need, or make one(scope creep)!
-- pin eks version to 1.21 (done)
 - check each EKS cluster and pod policy to see if you need it
 - find better way to authenticate to the cluster
 - optionally, enable Security Groups for Pods. in scope? would be good to talk about opening EFS port in SG used by pods (https://docs.aws.amazon.com/eks/latest/userguide/security-groups-for-pods.html)
+- add s3 backend
 - diagram of everything resource and connection
+- restrict efs access policy
+- efs should be One Zone storage class

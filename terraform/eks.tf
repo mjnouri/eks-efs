@@ -1,5 +1,5 @@
 resource "aws_iam_role" "eks_cluster_role" {
-  name = "${var.project_name}_eks_cluster_role"
+  name               = "${var.project_name}_eks_cluster_role"
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -31,7 +31,7 @@ resource "aws_eks_cluster" "eks_cluster" {
   role_arn = aws_iam_role.eks_cluster_role.arn
   version  = "1.21"
   vpc_config {
-    subnet_ids = [ aws_subnet.public_subnet[0].id, aws_subnet.public_subnet[1].id, aws_subnet.public_subnet[2].id ]
+    subnet_ids = [aws_subnet.public_subnet[0].id, aws_subnet.public_subnet[1].id, aws_subnet.public_subnet[2].id]
   }
   tags = {
     Name = "${var.project_name}_eks_cluster"
@@ -42,7 +42,7 @@ resource "aws_eks_cluster" "eks_cluster" {
 }
 
 resource "aws_iam_role" "eks_nodes_role" {
-  name = "${var.project_name}_eks_nodes_role"
+  name               = "${var.project_name}_eks_nodes_role"
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -79,10 +79,10 @@ resource "aws_eks_node_group" "node_group_1" {
   node_group_name = "${var.project_name}_node_group_1"
   node_role_arn   = aws_iam_role.eks_nodes_role.arn
   instance_types  = ["t3a.small"]
-  subnet_ids      = [ aws_subnet.public_subnet[0].id, aws_subnet.public_subnet[1].id, aws_subnet.public_subnet[2].id ]
+  subnet_ids      = [aws_subnet.public_subnet[0].id, aws_subnet.public_subnet[1].id, aws_subnet.public_subnet[2].id]
   scaling_config {
-    desired_size = 2
-    max_size     = 2
+    desired_size = 1
+    max_size     = 1
     min_size     = 1
   }
   depends_on = [
