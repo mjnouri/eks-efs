@@ -38,6 +38,7 @@ Deploy a sample containerized app using EFS storage to EKS
     - teardown deployments and infra
 
     to do:
+- make everything 3 subnets
 - variable out things like env, eks worker node instance type, etc?
 - test mount points util on wordpress image, or find another image that has what you need, or make one(scope creep)!
 - check each EKS cluster and pod policy to see if you need it
@@ -47,3 +48,33 @@ Deploy a sample containerized app using EFS storage to EKS
 - diagram of everything resource and connection
 - restrict efs access policy
 - efs should be One Zone storage class
+- find better way to listing 3 subnets
+- do the whole thing without the efa access policy to see if it allows all
+- replace efs line 52 with IAM role on EKS worker nodes
+
+    refresh:
+storageClass
+presistentVolume
+persistentVolumeClaim
+
+    steps to launch infra:
+terraform apply
+# confirm eks cluster and nodes
+k cluster-info
+k get nodes
+# at this point, check sc, pv, pvc, sa, sa -n kube-system
+kubectl get csidrivers.storage.k8s.io -oyaml
+# this work with a warning
+kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.0"
+# so try this (no errors)
+kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=master"
+kubectl apply -f .\storageClass.yml
+kubectl get sc
+aws efs describe-file-systems --query "FileSystems[*].FileSystemId"
+# in persistentVolume.yml, replace volumeHandle with actual efs id, possibly with sed -i "s/efs_id/$FILE_SYSTEM_ID/g" efs-pvc.yaml
+kubectl apply -f .\persistentVolume.yml
+# make sure it says bound
+kubectl get pvc
+
+sc -> pvc -> pod
+

@@ -43,10 +43,10 @@ resource "aws_efs_file_system_policy" "efs_policy" {
   policy = <<POLICY
 {
     "Version": "2012-10-17",
-    "Id": "ExamplePolicy01",
+    "Id": "EFSPolicy",
     "Statement": [
         {
-            "Sid": "ExampleStatement01",
+            "Sid": "AllowEKSWorkers",
             "Effect": "Allow",
             "Principal": {
                 "AWS": "*"
