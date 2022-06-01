@@ -50,7 +50,10 @@ Deploy a sample containerized app using EFS storage to EKS
 - efs should be One Zone storage class
 - find better way to listing 3 subnets
 - do the whole thing without the efa access policy to see if it allows all
-- replace efs line 52 with IAM role on EKS worker nodes
+- replace efs line 51 with IAM role on EKS worker nodes
+- go through each tf resource and add optional arguments, retest
+- remove root access and use posix user in efs mount access?
+- show mount command from k describe pod that is run in containers
 
     refresh:
 storageClass
@@ -72,9 +75,18 @@ kubectl apply -f .\storageClass.yml
 kubectl get sc
 aws efs describe-file-systems --query "FileSystems[*].FileSystemId"
 # in persistentVolume.yml, replace volumeHandle with actual efs id, possibly with sed -i "s/efs_id/$FILE_SYSTEM_ID/g" efs-pvc.yaml
-kubectl apply -f .\persistentVolume.yml
+kubectl apply -f persistentVolume.yml
+kubectl get pv
+# show Status Available
+kubectl apply -f persistentVolumeClaim.yml
+kubectl get pv
 # make sure it says bound
-kubectl get pvc
+kubectl apply -f pod.yml
 
 sc -> pvc -> pod
 
+fixed my problem where pod couldnt write to efs, ClientRootAccess
+fine tuning the policy so there are no stars
+then i'll add wordpress into the mix rather than a sample pod
+then add optional security groups for pods
+    find better way to auth (right now local provionser)
