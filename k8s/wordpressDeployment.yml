@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ubuntu-deployment
+  labels:
+    env: dev-deploy
+spec:
+  template:
+    metadata:
+      name: ubuntu-pod
+      labels:
+        env: dev-pod
+    spec:
+      containers:
+        - name: ubuntu-container
+          image: ubuntu
+          command: ["sleep"]
+          args: ["1000"]
+          volumeMounts:
+          - name: efs-vol
+            mountPath: /eks_efs
+      volumes:
+      - name: efs-vol
+        persistentVolumeClaim:
+          claimName: efs-pvc
+  replicas: 3
+  selector:
+    matchLabels:
+      env: dev-pod
