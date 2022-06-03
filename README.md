@@ -69,27 +69,16 @@ k get nodes
 kubectl get csidrivers.storage.k8s.io -oyaml
 # this works
 kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.3"
+aws efs describe-file-systems --query "FileSystems[*].FileSystemId"
+# in storageClass.yml, replace fileSystemId with actual efs id, possibly with sed -i "s/efs_id/$FILE_SYSTEM_ID/g" efs-pvc.yaml
 kubectl apply -f .\storageClass.yml
 kubectl get sc
-aws efs describe-file-systems --query "FileSystems[*].FileSystemId"
-# in persistentVolume.yml, replace volumeHandle with actual efs id, possibly with sed -i "s/efs_id/$FILE_SYSTEM_ID/g" efs-pvc.yaml
 kubectl get pv
-# show Status Available
 kubectl apply -f persistentVolumeClaim.yml
 # make sure it says bound
 kubectl apply -f wordpressDeployment.yml
 
-sc -> pvc -> deployment
-
-fixed my problem where pod couldnt write to efs, ClientRootAccess
-fine tuning the policy so there are no stars
-then i'll add wordpress into the mix rather than a sample pod
-then add optional security groups for pods
-    find better way to auth (right now local provionser)
 
 
-                                     -------
-  Normal   Provisioning          3m4s (x14 over 26m)  efs.csi.aws.com_ip-10-0-3-7.ec2.internal_e6cfb004-6b52-4ccb-af3b-9beff6879b86  External provisioner is provisioning volume for claim "default/efs-pvc"
-  Warning  ProvisioningFailed    3m4s (x14 over 26m)  efs.csi.aws.com_ip-10-0-3-7.ec2.internal_e6cfb004-6b52-4ccb-af3b-9beff6879b86  failed to provision volume with StorageClass "efs-sc": rpc error: code = Unauthenticated desc = Access Denied. Please ensure you have the right AWS permissions: Access denied
-  Normal   ExternalProvisioning  81s (x103 over 26m)  persistentvolume-controller                                                    waiting for a volume to be created, either by external provisioner "efs.csi.aws.com" or manually created by system administrator
-PS C:\Users\Nouri\repos\eks-efs\k8s> k describe pvc efs-pvc
+
+eksctl create iamserviceaccount --cluster=eks_efs_eks_cluster --region us-east-1 --namespace=kube-system --name=efs-csi-controller-sa --override-existing-serviceaccounts --attach-policy-arn=arn:aws:iam::765981046280:policy/EFSCSIControllerIAMPolicy --approve

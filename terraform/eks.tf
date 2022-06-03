@@ -91,3 +91,73 @@ resource "aws_eks_node_group" "node_group_1" {
     aws_iam_role_policy_attachment.AmazonEC2ContainerRegistryReadOnly_attachment
   ]
 }
+
+resource "aws_iam_policy" "eks_serviceaccount_policy" {
+  name        = "EFSCSIControllerIAMPolicy"
+  description = "Grant access to EFS Access Point"
+
+  policy = jsonencode({
+    "Version":"2012-10-17",
+    "Statement":[
+       {
+          "Effect":"Allow",
+          "Action":[
+             "elasticfilesystem:DescribeAccessPoints",
+             "elasticfilesystem:DescribeFileSystems"
+          ],
+          "Resource":"*"
+       },
+       {
+          "Effect":"Allow",
+          "Action":[
+             "elasticfilesystem:CreateAccessPoint"
+          ],
+          "Resource":"*",
+          "Condition":{
+             "StringLike":{
+                "aws:RequestTag/efs.csi.aws.com/cluster":"true"
+             }
+          }
+       },
+       {
+          "Effect":"Allow",
+          "Action":"elasticfilesystem:DeleteAccessPoint",
+          "Resource":"*",
+          "Condition":{
+             "StringEquals":{
+                "aws:ResourceTag/efs.csi.aws.com/cluster":"true"
+             }
+          }
+       }
+    ]
+  })
+}
+
+resource "aws_iam_role" "eks_serviceaccount_role" {
+  name               = "${var.project_name}_eks_serviceaccount_role"
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::765981046280:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/64A0F61BE36D445CC24A657B7B3872A6"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "oidc.eks.us-east-1.amazonaws.com/id/64A0F61BE36D445CC24A657B7B3872A6:aud": "sts.amazonaws.com",
+          "oidc.eks.us-east-1.amazonaws.com/id/64A0F61BE36D445CC24A657B7B3872A6:sub": "system:serviceaccount:efs-ns:efs-sa"
+        }
+      }
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "attachit" {
+  policy_arn = aws_iam_policy.eks_serviceaccount_policy.arn
+  role       = aws_iam_role.eks_serviceaccount_role.name
+}
