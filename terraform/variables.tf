@@ -1,5 +1,5 @@
 variable "project_name" {
-  default = "eks_efs"
+  default = "test"
 }
 
 variable "public_subnet_cidr" {

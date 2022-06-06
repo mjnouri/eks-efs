@@ -27,17 +27,17 @@ resource "aws_iam_role_policy_attachment" "AmazonEKSServicePolicy_attachment" {
 }
 
 resource "aws_eks_cluster" "eks_cluster" {
-  name     = "${var.project_name}_eks_cluster"
+  name     = "eks1"
   role_arn = aws_iam_role.eks_cluster_role.arn
   version  = "1.21"
   vpc_config {
     subnet_ids = [aws_subnet.public_subnet[0].id, aws_subnet.public_subnet[1].id, aws_subnet.public_subnet[2].id]
   }
   tags = {
-    Name = "${var.project_name}_eks_cluster"
+    Name = "eks1"
   }
   provisioner "local-exec" {
-    command = "aws eks --region us-east-1 update-kubeconfig --name eks_efs_eks_cluster"
+    command = "aws eks update-kubeconfig --name eks1 --region us-east-1"
   }
 }
 
