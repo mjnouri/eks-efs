@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ubuntu-deployment
-  namespace: efs_ns
   labels:
     env: dev-deploy
 spec:
@@ -19,11 +18,11 @@ spec:
           args: ["1000"]
           volumeMounts:
           - name: efs-vol
-            mountPath: /eks_efs
+            mountPath: /efs
       volumes:
       - name: efs-vol
         persistentVolumeClaim:
-          claimName: efs-pvc
+          claimName: efs-claim
   replicas: 3
   selector:
     matchLabels:

@@ -81,9 +81,9 @@ resource "aws_eks_node_group" "node_group_1" {
   instance_types  = ["t3a.small"]
   subnet_ids      = [aws_subnet.public_subnet[0].id, aws_subnet.public_subnet[1].id, aws_subnet.public_subnet[2].id]
   scaling_config {
-    desired_size = 1
-    max_size     = 1
-    min_size     = 1
+    desired_size = 2
+    max_size     = 2
+    min_size     = 2
   }
   depends_on = [
     aws_iam_role_policy_attachment.AmazonEKSWorkerNodePolicy_attachment,
@@ -133,31 +133,39 @@ resource "aws_iam_policy" "eks_serviceaccount_policy" {
   })
 }
 
-resource "aws_iam_role" "eks_serviceaccount_role" {
-  name               = "${var.project_name}_eks_serviceaccount_role"
-  assume_role_policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": {
-        "Federated": "arn:aws:iam::765981046280:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/64A0F61BE36D445CC24A657B7B3872A6"
-      },
-      "Action": "sts:AssumeRoleWithWebIdentity",
-      "Condition": {
-        "StringEquals": {
-          "oidc.eks.us-east-1.amazonaws.com/id/64A0F61BE36D445CC24A657B7B3872A6:aud": "sts.amazonaws.com",
-          "oidc.eks.us-east-1.amazonaws.com/id/64A0F61BE36D445CC24A657B7B3872A6:sub": "system:serviceaccount:efs-ns:efs-sa"
-        }
-      }
-    }
-  ]
-}
-EOF
-}
+# resource "aws_iam_role" "eks_serviceaccount_role" {
+#   name               = "${var.project_name}_eks_serviceaccount_role"
+#   assume_role_policy = <<EOF
+# {
+#   "Version": "2012-10-17",
+#   "Statement": [
+#     {
+#       "Effect": "Allow",
+#       "Principal": {
+#         "Federated": "arn:aws:iam::765981046280:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/B355C9540A3CA3870306F45F137DDE3B"
+#       },
+#       "Action": "sts:AssumeRoleWithWebIdentity",
+#       "Condition": {
+#         "StringEquals": {
+#           "oidc.eks.us-east-1.amazonaws.com/id/B355C9540A3CA3870306F45F137DDE3B:aud": "sts.amazonaws.com",
+#           "oidc.eks.us-east-1.amazonaws.com/id/B355C9540A3CA3870306F45F137DDE3B:sub": "system:serviceaccount:kube-system:efs-csi-controller-sa"
+#         }
+#       }
+#     }
+#   ]
+# }
+# EOF
+# }
 
-resource "aws_iam_role_policy_attachment" "attachit" {
-  policy_arn = aws_iam_policy.eks_serviceaccount_policy.arn
-  role       = aws_iam_role.eks_serviceaccount_role.name
+# resource "aws_iam_role_policy_attachment" "attachit" {
+#   policy_arn = aws_iam_policy.eks_serviceaccount_policy.arn
+#   role       = aws_iam_role.eks_serviceaccount_role.name
+# }
+
+resource "aws_iam_openid_connect_provider" "eks_oidc" {
+  url = aws_eks_cluster.eks_cluster.identity[0].oidc[0].issuer
+  client_id_list = [
+    "sts.amazonaws.com"
+  ]
+  thumbprint_list = []
 }

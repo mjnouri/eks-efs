@@ -11,6 +11,38 @@ resource "aws_efs_file_system" "efs" {
   }
 }
 
+# resource "aws_efs_file_system_policy" "efs_policy" {
+#   file_system_id = aws_efs_file_system.efs.id
+#   policy         = <<POLICY
+# {
+#    "Version":"2012-10-17",
+#    "Id":"EFSPolicy",
+#    "Statement":[
+#       {
+#          "Sid":"AllowEKSWorkers",
+#          "Principal":{
+#             "AWS":"*"
+#          },
+#          "Effect":"Allow",
+#          "Action":[
+#             "elasticfilesystem:ClientMount",
+#             "elasticfilesystem:ClientRootAccess",
+#             "elasticfilesystem:ClientWrite"
+#          ],
+#          "Resource":"${aws_efs_file_system.efs.arn}",
+#          "Condition":{
+#             "Bool":{
+#                "aws:SecureTransport":"true",
+#                "elasticfilesystem:AccessedViaMountTarget":"true",
+#                "elasticfilesystem:Encrypted":"true"
+#             }
+#          }
+#       }
+#    ]
+# }
+# POLICY
+# }
+
 resource "aws_efs_file_system_policy" "efs_policy" {
   file_system_id = aws_efs_file_system.efs.id
   policy         = <<POLICY
@@ -29,14 +61,7 @@ resource "aws_efs_file_system_policy" "efs_policy" {
             "elasticfilesystem:ClientRootAccess",
             "elasticfilesystem:ClientWrite"
          ],
-         "Resource":"${aws_efs_file_system.efs.arn}",
-         "Condition":{
-            "Bool":{
-               "aws:SecureTransport":"true",
-               "elasticfilesystem:AccessedViaMountTarget":"true",
-               "elasticfilesystem:Encrypted":"true"
-            }
-         }
+         "Resource":"${aws_efs_file_system.efs.arn}"
       }
    ]
 }

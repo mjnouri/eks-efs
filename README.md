@@ -10,6 +10,7 @@ Deploy a sample containerized app using EFS storage to EKS
 - terraform modules. (not going to use them, since the focus is eks/efs/iam)
 - explaining terraform and k8s concepts in great detail
 - no pipeline to launch this (jenkins, gitlab, github actions), going to just run it locally
+- helm
 
     article outline
 - explain at 10k level what we are building. maybe 3-5 plain english sentences. exec summary.
@@ -54,90 +55,35 @@ Deploy a sample containerized app using EFS storage to EKS
 - go through each tf resource and add optional arguments, retest
 - remove root access and use posix user in efs mount access?
 - show mount command from k describe pod that is run in containers
+- since eksctl is out, try renaming the eks cluster to include "_"
 
-    refresh:
-storageClass
-presistentVolume
-persistentVolumeClaim
-
-    steps to launch infra:
-terraform apply
-# confirm eks cluster and nodes
-k cluster-info
-k get nodes
-# at this point, check sc, pv, pvc, sa, sa -n kube-system
-kubectl get csidrivers.storage.k8s.io -oyaml
-# this works
-kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.3"
-aws efs describe-file-systems --query "FileSystems[*].FileSystemId"
-# in storageClass.yml, replace fileSystemId with actual efs id, possibly with sed -i "s/efs_id/$FILE_SYSTEM_ID/g" efs-pvc.yaml
-kubectl apply -f .\storageClass.yml
-kubectl get sc
-kubectl get pv
-kubectl apply -f persistentVolumeClaim.yml
-# make sure it says bound
-kubectl apply -f wordpressDeployment.yml
-
-    directions:
-on wsl
-aws cli v2 and auth using mark, tf, kubectl, eksctl, helm
-spin up all tf
-create OIDC provider, make with tf
-k cluster-info
-k get nodes
-
-# if using eksctl, this command can't have eks cluster name with "_" in it. check eks cluster name
-eksctl create iamserviceaccount --cluster=eks1 --region us-east-1 --namespace=kube-system --name=efs-csi-controller-sa --override-existing-serviceaccounts --attach-policy-arn=arn:aws:iam::765981046280:policy/EFSCSIControllerIAMPolicy --approve
-# this created an IAM role=eksctl-eks1-addon-iamserviceaccount-kube-sys-Role1-13GNKI5VSF2BC
-# this also created k8s sa efs-csi-controller-sa in namespace kube-system
-investigate: eksctl step that creates role (and its trust entities), serviceaccount -n kube-system, and everything in it's cf stack
-
-# install efs CSI drivers using this way...
-helm repo add aws-efs-csi-driver https://kubernetes-sigs.github.io/aws-efs-csi-driver
-helm repo update
-# using us-east-1 ecr repo
-helm upgrade -i aws-efs-csi-driver aws-efs-csi-driver/aws-efs-csi-driver --namespace kube-system --set image.repository=602401143452.dkr.ecr.us-west-2.amazonaws.com/eks/aws-efs-csi-driver --set controller.serviceAccount.create=false --set controller.serviceAccount.name=efs-csi-controller-sa
-# error - only 1 repica is spinning up
-
-# or install efs CSI driver this way
+    steps:
+1. on wsl, aws cli v2 and auth using mark, tf, kubectl, eksctl, helm
+2. spin up tf
+3*. create OIDC provider
+4. aws iam create-policy --policy-name EFSCSIControllerIAMPolicy --policy-document file://iam-policy.json
+5*. eksctl create iamserviceaccount --cluster=eks1 --region us-east-1 --namespace=kube-system --name=efs-csi-controller-sa --override-existing-serviceaccounts --attach-policy-arn=arn:aws:iam::765981046280:policy/EFSCSIControllerIAMPolicy --approve
+6. helm repo add aws-efs-csi-driver https://kubernetes-sigs.github.io/aws-efs-csi-driver
+7. helm repo update
+8*. helm upgrade -i aws-efs-csi-driver aws-efs-csi-driver/aws-efs-csi-driver --namespace kube-system --set image.repository=602401143452.dkr.ecr.us-east-1.amazonaws.com/eks/aws-efs-csi-driver --set controller.serviceAccount.create=false --set controller.serviceAccount.name=efs-csi-controller-sa
+# or install efs CSI driver with kustomize
 kubectl kustomize "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.2" > driver.yaml
 vim driver.yaml # delete the service account created in step 1.
 kubectl apply -f driver.yaml
+9*. copy efs id and place in storageClass.yml
+10. k apply -f storageClass.yml
+11. k apply -f persistentVolumeClaim.yml
+12. k apply -f deployment.yml
+13. watch kubectl get all
 
-# copy efs id and place in storageClass.yml
-k apply -f storageClass.yml
-k apply -f persistenVolumeClaim.yml
-k apply -f pod.yml
-# error using helm method - Events:
-  Type     Reason       Age                From               Message
-  ----     ------       ----               ----               -------
-  Normal   Scheduled    85s                default-scheduler  Successfully assigned default/efs-example to ip-10-0-2-155.ec2.internal
-  Warning  FailedMount  12s (x8 over 78s)  kubelet            MountVolume.SetUp failed for volume "pvc-f5d94e11-d7b1-44ff-941e-ceed43f6e711" : rpc error: code = Internal desc = Could not mount "fs-0de7611513f6ba12b:/" at "/var/lib/kubelet/pods/220b92bb-ebb2-4a50-9fb5-15cbd3664309/volumes/kubernetes.io~csi/pvc-f5d94e11-d7b1-44ff-941e-ceed43f6e711/mount": mount failed: exit status 32
-Mounting command: mount
-Mounting arguments: -t efs -o accesspoint=fsap-092744c2129f9680a,tls fs-0de7611513f6ba12b:/ /var/lib/kubelet/pods/220b92bb-ebb2-4a50-9fb5-15cbd3664309/volumes/kubernetes.io~csi/pvc-f5d94e11-d7b1-44ff-941e-ceed43f6e711/mount
-Output: Could not start amazon-efs-mount-watchdog, unrecognized init system "aws-efs-csi-dri"
-b'mount.nfs4: access denied by server while mounting 127.0.0.1:/'
+    cleanup:
+1. terraform destroy -auto-approve
+2. delete iam policy EFSCSIControllerIAMPolicy
+2. delete oidc
+3. delete cloudformation from eksctl
 
-
-
-automate these steps
-1. create IAM OIDC
-2. create a role, attach the EFSCSIControllerIAMPolicy policy, add this trust policy
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "Federated": "arn:aws:iam::765981046280:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/F1B74DD940139CBCD19566DB08A94255"
-            },
-            "Action": "sts:AssumeRoleWithWebIdentity",
-            "Condition": {
-                "StringEquals": {
-                    "oidc.eks.us-east-1.amazonaws.com/id/F1B74DD940139CBCD19566DB08A94255:sub": "system:serviceaccount:kube-system:efs-csi-controller-sa",
-                    "oidc.eks.us-east-1.amazonaws.com/id/F1B74DD940139CBCD19566DB08A94255:aud": "sts.amazonaws.com"
-                }
-            }
-        }
-    ]
-}
+    automation:
+3. oidc provider needs thumbprint. how do you get thumbprint via tf
+5. this makes an iam role with trusted entity policy, and k8s serviceaccount
+8. deploy all this helm with vanilla k8s yml
+9. get tf output of efs id, place in storageClass.yml (refer to previous project on how this is done)
