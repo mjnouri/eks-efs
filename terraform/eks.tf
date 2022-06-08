@@ -133,39 +133,39 @@ resource "aws_iam_policy" "eks_serviceaccount_policy" {
   })
 }
 
-# resource "aws_iam_role" "eks_serviceaccount_role" {
-#   name               = "${var.project_name}_eks_serviceaccount_role"
-#   assume_role_policy = <<EOF
-# {
-#   "Version": "2012-10-17",
-#   "Statement": [
-#     {
-#       "Effect": "Allow",
-#       "Principal": {
-#         "Federated": "arn:aws:iam::765981046280:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/B355C9540A3CA3870306F45F137DDE3B"
-#       },
-#       "Action": "sts:AssumeRoleWithWebIdentity",
-#       "Condition": {
-#         "StringEquals": {
-#           "oidc.eks.us-east-1.amazonaws.com/id/B355C9540A3CA3870306F45F137DDE3B:aud": "sts.amazonaws.com",
-#           "oidc.eks.us-east-1.amazonaws.com/id/B355C9540A3CA3870306F45F137DDE3B:sub": "system:serviceaccount:kube-system:efs-csi-controller-sa"
-#         }
-#       }
-#     }
-#   ]
-# }
-# EOF
-# }
+resource "aws_iam_role" "eks_serviceaccount_role" {
+  name               = "${var.project_name}_eks_serviceaccount_role"
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::765981046280:${local.eks_oidc}"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "${local.eks_oidc}:aud": "sts.amazonaws.com",
+          "${local.eks_oidc}:sub": "system:serviceaccount:kube-system:efs-csi-controller-sa"
+        }
+      }
+    }
+  ]
+}
+EOF
+}
 
 # resource "aws_iam_role_policy_attachment" "attachit" {
 #   policy_arn = aws_iam_policy.eks_serviceaccount_policy.arn
 #   role       = aws_iam_role.eks_serviceaccount_role.name
 # }
 
-resource "aws_iam_openid_connect_provider" "eks_oidc" {
-  url = aws_eks_cluster.eks_cluster.identity[0].oidc[0].issuer
-  client_id_list = [
-    "sts.amazonaws.com"
-  ]
-  thumbprint_list = []
-}
+# resource "aws_iam_openid_connect_provider" "eks_oidc" {
+#   url = aws_eks_cluster.eks_cluster.identity[0].oidc[0].issuer
+#   client_id_list = [
+#     "sts.amazonaws.com"
+#   ]
+#   thumbprint_list = []
+# }

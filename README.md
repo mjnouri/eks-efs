@@ -56,6 +56,7 @@ Deploy a sample containerized app using EFS storage to EKS
 - remove root access and use posix user in efs mount access?
 - show mount command from k describe pod that is run in containers
 - since eksctl is out, try renaming the eks cluster to include "_"
+- eksctl documentation: If you used instance roles, and are considering to use IRSA instead, you shouldn't mix the two.
 
     steps:
 1. on wsl, aws cli v2 and auth using mark, tf, kubectl, eksctl, helm
@@ -73,8 +74,9 @@ kubectl apply -f driver.yaml
 9*. copy efs id and place in storageClass.yml
 10. k apply -f storageClass.yml
 11. k apply -f persistentVolumeClaim.yml
-12. k apply -f deployment.yml
-13. watch kubectl get all
+12. k get pvc efs-claim - make sure pvc is in bound state (this requires oidc and its thumbprint)
+13. k apply -f deployment.yml
+14. watch kubectl get all
 
     cleanup:
 1. terraform destroy -auto-approve
@@ -83,7 +85,51 @@ kubectl apply -f driver.yaml
 3. delete cloudformation from eksctl
 
     automation:
-3. oidc provider needs thumbprint. how do you get thumbprint via tf
+3. oidc provider needs thumbprint. how do you get thumbprint via tf? python?
 5. this makes an iam role with trusted entity policy, and k8s serviceaccount
 8. deploy all this helm with vanilla k8s yml
 9. get tf output of efs id, place in storageClass.yml (refer to previous project on how this is done)
+
+    automation notes:
+5.
+    aws iam role:
+name                eksctl-eks1-addon-iamserviceaccount-kube-sys-Role1-128WXYDV011BM
+policy attached     EFSCSIControllerIAMPolicy
+trust policy        ...
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Federated": "arn:aws:iam::765981046280:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/C3DD7659EDACE01DBB8BBF96E953C97F"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+                "StringEquals": {
+                    "oidc.eks.us-east-1.amazonaws.com/id/C3DD7659EDACE01DBB8BBF96E953C97F:sub": "system:serviceaccount:kube-system:efs-csi-controller-sa",
+                    "oidc.eks.us-east-1.amazonaws.com/id/C3DD7659EDACE01DBB8BBF96E953C97F:aud": "sts.amazonaws.com"
+                }
+            }
+        }
+    ]
+}
+
+    eks sa:
+name                efs-csi-controller-sa
+yaml                ...
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::765981046280:role/eksctl-eks1-addon-iamserviceaccount-kube-sys-Role1-128WXYDV011BM
+  creationTimestamp: "2022-06-08T17:04:41Z"
+  labels:
+    app.kubernetes.io/managed-by: eksctl
+  name: efs-csi-controller-sa
+  namespace: kube-system
+  resourceVersion: "17003"
+  uid: 52fbc43a-6225-4197-ad42-7010f963e50f
+secrets:
+- name: efs-csi-controller-sa-token-gnzzk
+
