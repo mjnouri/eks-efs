@@ -61,31 +61,27 @@ Deploy a sample containerized app using EFS storage to EKS
     steps:
 1. on wsl, aws cli v2 and auth using mark, tf, kubectl, eksctl, helm
 2. spin up tf
-3*. create OIDC provider
-4. aws iam create-policy --policy-name EFSCSIControllerIAMPolicy --policy-document file://iam-policy.json
-5*. eksctl create iamserviceaccount --cluster=eks1 --region us-east-1 --namespace=kube-system --name=efs-csi-controller-sa --override-existing-serviceaccounts --attach-policy-arn=arn:aws:iam::765981046280:policy/EFSCSIControllerIAMPolicy --approve
-6. helm repo add aws-efs-csi-driver https://kubernetes-sigs.github.io/aws-efs-csi-driver
-7. helm repo update
-8*. helm upgrade -i aws-efs-csi-driver aws-efs-csi-driver/aws-efs-csi-driver --namespace kube-system --set image.repository=602401143452.dkr.ecr.us-east-1.amazonaws.com/eks/aws-efs-csi-driver --set controller.serviceAccount.create=false --set controller.serviceAccount.name=efs-csi-controller-sa
+3. (done with tf) aws iam create-policy --policy-name EFSCSIControllerIAMPolicy --policy-document file://iam-policy.json
+4*. eksctl create iamserviceaccount --cluster=eks1 --region us-east-1 --namespace=kube-system --name=efs-csi-controller-sa --override-existing-serviceaccounts --attach-policy-arn=arn:aws:iam::765981046280:policy/EFSCSIControllerIAMPolicy --approve
+5. helm repo add aws-efs-csi-driver https://kubernetes-sigs.github.io/aws-efs-csi-driver
+6. helm repo update
+7*. helm upgrade -i aws-efs-csi-driver aws-efs-csi-driver/aws-efs-csi-driver --namespace kube-system --set image.repository=602401143452.dkr.ecr.us-east-1.amazonaws.com/eks/aws-efs-csi-driver --set controller.serviceAccount.create=false --set controller.serviceAccount.name=efs-csi-controller-sa
 # or install efs CSI driver with kustomize
 kubectl kustomize "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.2" > driver.yaml
 vim driver.yaml # delete the service account created in step 1.
 kubectl apply -f driver.yaml
-9*. copy efs id and place in storageClass.yml
-10. k apply -f storageClass.yml
-11. k apply -f persistentVolumeClaim.yml
-12. k get pvc efs-claim - make sure pvc is in bound state (this requires oidc and its thumbprint)
-13. k apply -f deployment.yml
-14. watch kubectl get all
+8*. copy efs id and place in storageClass.yml
+9. k apply -f storageClass.yml
+10. k apply -f persistentVolumeClaim.yml
+11. k get pvc efs-claim - make sure pvc is in bound state (this requires oidc and its thumbprint)
+12. k apply -f deployment.yml
+13. watch kubectl get all
 
     cleanup:
-1. terraform destroy -auto-approve
-2. delete iam policy EFSCSIControllerIAMPolicy
-2. delete oidc
-3. delete cloudformation from eksctl
+1. delete cloudformation from eksctl
+2. terraform destroy -auto-approve
 
     automation:
-3. oidc provider needs thumbprint. how do you get thumbprint via tf? python?
 5. this makes an iam role with trusted entity policy, and k8s serviceaccount
 8. deploy all this helm with vanilla k8s yml
 9. get tf output of efs id, place in storageClass.yml (refer to previous project on how this is done)
@@ -133,3 +129,6 @@ metadata:
 secrets:
 - name: efs-csi-controller-sa-token-gnzzk
 
+    standup:
+started today by trying to get eks nodes to join a cluster with a private endpoint, for Masi's helm initiative
+    ended up finding documentaion on how to automate the OIDC thumbprint for my efs project, so got that working
