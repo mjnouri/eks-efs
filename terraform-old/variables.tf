@@ -1,13 +1,5 @@
-variable "owner" {
-  default = "mark"
-}
-
 variable "project_name" {
-  default = "helm_testing"
-}
-
-variable "env" {
-  default = "dev"
+  default = "test"
 }
 
 variable "public_subnet_cidr" {

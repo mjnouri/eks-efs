@@ -57,34 +57,34 @@ Deploy a sample containerized app using EFS storage to EKS
 - show mount command from k describe pod that is run in containers
 - since eksctl is out, try renaming the eks cluster to include "_"
 - eksctl documentation: If you used instance roles, and are considering to use IRSA instead, you shouldn't mix the two.
+- add cleanup steps - delete deployment, service, then tf destroy
 
     steps:
 1. on wsl, aws cli v2 and auth using mark, tf, kubectl, eksctl, helm
 2. spin up tf
-3. (done with tf) aws iam create-policy --policy-name EFSCSIControllerIAMPolicy --policy-document file://iam-policy.json
-4*. eksctl create iamserviceaccount --cluster=eks1 --region us-east-1 --namespace=kube-system --name=efs-csi-controller-sa --override-existing-serviceaccounts --attach-policy-arn=arn:aws:iam::765981046280:policy/EFSCSIControllerIAMPolicy --approve
-5. helm repo add aws-efs-csi-driver https://kubernetes-sigs.github.io/aws-efs-csi-driver
-6. helm repo update
-7*. helm upgrade -i aws-efs-csi-driver aws-efs-csi-driver/aws-efs-csi-driver --namespace kube-system --set image.repository=602401143452.dkr.ecr.us-east-1.amazonaws.com/eks/aws-efs-csi-driver --set controller.serviceAccount.create=false --set controller.serviceAccount.name=efs-csi-controller-sa
+3*. eksctl create iamserviceaccount --cluster=eks1 --region us-east-1 --namespace=kube-system --name=efs-csi-controller-sa --override-existing-serviceaccounts --attach-policy-arn=arn:aws:iam::765981046280:policy/EFSCSIControllerIAMPolicy --approve
+4. helm repo add aws-efs-csi-driver https://kubernetes-sigs.github.io/aws-efs-csi-driver
+5. helm repo update
+6*. helm upgrade -i aws-efs-csi-driver aws-efs-csi-driver/aws-efs-csi-driver --namespace kube-system --set image.repository=602401143452.dkr.ecr.us-east-1.amazonaws.com/eks/aws-efs-csi-driver --set controller.serviceAccount.create=false --set controller.serviceAccount.name=efs-csi-controller-sa
 # or install efs CSI driver with kustomize
 kubectl kustomize "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.2" > driver.yaml
 vim driver.yaml # delete the service account created in step 1.
 kubectl apply -f driver.yaml
-8*. copy efs id and place in storageClass.yml
-9. k apply -f storageClass.yml
-10. k apply -f persistentVolumeClaim.yml
-11. k get pvc efs-claim - make sure pvc is in bound state (this requires oidc and its thumbprint)
-12. k apply -f deployment.yml
-13. watch kubectl get all
+7*. copy efs id and place in storageClass.yml
+8. k apply -f storageClass.yml
+9. k apply -f persistentVolumeClaim.yml
+10. k get pvc efs-claim - make sure pvc is in bound state (this requires oidc and its thumbprint)
+11. k apply -f deployment.yml
+12. watch kubectl get all
 
     cleanup:
 1. delete cloudformation from eksctl
 2. terraform destroy -auto-approve
 
     automation:
-5. this makes an iam role with trusted entity policy, and k8s serviceaccount
-8. deploy all this helm with vanilla k8s yml
-9. get tf output of efs id, place in storageClass.yml (refer to previous project on how this is done)
+3. this makes an iam role with trusted entity policy, and k8s serviceaccount
+6. deploy all this helm with vanilla k8s yml
+7. get tf output of efs id, place in storageClass.yml (refer to previous project on how this is done)
 
     automation notes:
 5.
@@ -129,6 +129,39 @@ metadata:
 secrets:
 - name: efs-csi-controller-sa-token-gnzzk
 
-    standup:
-started today by trying to get eks nodes to join a cluster with a private endpoint, for Masi's helm initiative
-    ended up finding documentaion on how to automate the OIDC thumbprint for my efs project, so got that working
+---
+
+to add other IAM users access to cluster
+kubectl edit -n kube-system configmap/aws-auth
+  mapUsers: |
+    - groups:
+      - system:masters
+      userarn: arn:aws:iam::765981046280:user/devils
+      username: devils
+
+or this does the same thing
+
+eksctl create iamidentitymapping --cluster test_eks_cluster --region=us-east-1 --arn arn:aws:iam::765981046280:user/devils --group system:masters --no-duplicate-arns
+
+here is an example aws-auth config map from the documentation
+apiVersion: v1
+data:
+  mapRoles: |
+    - groups:
+      - system:bootstrappers
+      - system:nodes
+      rolearn: arn:aws:iam::111122223333:role/my-role
+      username: system:node:{{EC2PrivateDNSName}}
+    - groups:
+      - eks-console-dashboard-full-access-group
+      rolearn: arn:aws:iam::111122223333:role/my-console-viewer-role
+      username: my-console-viewer-role
+  mapUsers: |
+    - groups:
+      - system:masters
+      userarn: arn:aws:iam::111122223333:user/admin
+      username: admin
+    - groups:
+      - eks-console-dashboard-restricted-access-group      
+      userarn: arn:aws:iam::444455556666:user/my-user
+      username: my-user
