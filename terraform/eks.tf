@@ -27,7 +27,7 @@ resource "aws_iam_role_policy_attachment" "AmazonEKSServicePolicy_attachment" {
 }
 
 resource "aws_eks_cluster" "eks_cluster" {
-  name     = "eks1"
+  name     = var.eks_cluster_name
   role_arn = aws_iam_role.eks_cluster_role.arn
   version  = "1.21"
   vpc_config {
@@ -36,10 +36,10 @@ resource "aws_eks_cluster" "eks_cluster" {
     endpoint_public_access  = "true"
   }
   tags = {
-    Name = "eks1"
+    Name = var.eks_cluster_name
   }
   provisioner "local-exec" {
-    command = "aws eks update-kubeconfig --name eks1 --region us-east-1"
+    command = "aws eks update-kubeconfig --name ${var.eks_cluster_name} --region us-east-1"
   }
 }
 
@@ -103,6 +103,76 @@ resource "aws_eks_node_group" "node_group_1" {
     aws_iam_role_policy_attachment.AmazonEC2ContainerRegistryReadOnly_attachment
   ]
 }
+
+resource "aws_iam_policy" "eks_serviceaccount_policy" {
+  name        = "EFSCSIControllerIAMPolicy"
+  description = "Grant access to EFS Access Point"
+
+  policy = jsonencode({
+    "Version":"2012-10-17",
+    "Statement":[
+       {
+          "Effect":"Allow",
+          "Action":[
+             "elasticfilesystem:DescribeAccessPoints",
+             "elasticfilesystem:DescribeFileSystems"
+          ],
+          "Resource":"*"
+       },
+       {
+          "Effect":"Allow",
+          "Action":[
+             "elasticfilesystem:CreateAccessPoint"
+          ],
+          "Resource":"*",
+          "Condition":{
+             "StringLike":{
+                "aws:RequestTag/efs.csi.aws.com/cluster":"true"
+             }
+          }
+       },
+       {
+          "Effect":"Allow",
+          "Action":"elasticfilesystem:DeleteAccessPoint",
+          "Resource":"*",
+          "Condition":{
+             "StringEquals":{
+                "aws:ResourceTag/efs.csi.aws.com/cluster":"true"
+             }
+          }
+       }
+    ]
+  })
+}
+
+# resource "aws_iam_role" "eks_serviceaccount_role" {
+#   name               = "${var.project_name}_eks_serviceaccount_role"
+#   assume_role_policy = <<EOF
+# {
+#   "Version": "2012-10-17",
+#   "Statement": [
+#     {
+#       "Effect": "Allow",
+#       "Principal": {
+#         "Federated": "arn:aws:iam::765981046280:${local.eks_oidc}"
+#       },
+#       "Action": "sts:AssumeRoleWithWebIdentity",
+#       "Condition": {
+#         "StringEquals": {
+#           "${local.eks_oidc}:aud": "sts.amazonaws.com",
+#           "${local.eks_oidc}:sub": "system:serviceaccount:kube-system:efs-csi-controller-sa"
+#         }
+#       }
+#     }
+#   ]
+# }
+# EOF
+# }
+
+# resource "aws_iam_role_policy_attachment" "attachit" {
+#   policy_arn = aws_iam_policy.eks_serviceaccount_policy.arn
+#   role       = aws_iam_role.eks_serviceaccount_role.name
+# }
 
 # resource "aws_iam_role" "eks_fargate_role" {
 #   name = "${var.project_name}_${var.env}_eks_fargate_role"
