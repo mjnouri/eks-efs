@@ -60,25 +60,17 @@ Deploy a sample containerized app using EFS storage to EKS
 - add cleanup steps - delete deployment, service, then tf destroy
 - deploy sc and run waiter to make sure it's good
 - deploy pvc and run waiter to make sure it's bound, then deploy the deployment
+- add that you got efs csi config files with kubectl kustomize "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.2"
 
     steps:
-1. on wsl, aws cli v2 and auth using mark, tf, kubectl, eksctl, helm
-2. spin up tf
-3. AWSACCOUNTNUMBER=$(aws sts get-caller-identity --query Account --output text)
-4*. eksctl create iamserviceaccount --cluster=eks1 --region us-east-1 --namespace=kube-system --name=efs-csi-controller-sa --override-existing-serviceaccounts --attach-policy-arn=arn:aws:iam::$AWSACCOUNTNUMBER:policy/EFSCSIControllerIAMPolicy --approve
-5. helm repo add aws-efs-csi-driver https://kubernetes-sigs.github.io/aws-efs-csi-driver
-6. helm repo update
-7*. helm upgrade -i aws-efs-csi-driver aws-efs-csi-driver/aws-efs-csi-driver --namespace kube-system --set image.repository=602401143452.dkr.ecr.us-east-1.amazonaws.com/eks/aws-efs-csi-driver --set controller.serviceAccount.create=false --set controller.serviceAccount.name=efs-csi-controller-sa
-# or install efs CSI driver with kustomize
-kubectl kustomize "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.2" > driver.yaml
-vim driver.yaml # delete the service account created in step 1.
-kubectl apply -f driver.yaml
-8*. copy efs id and place in storageClass.yml
-9. k apply -f storageClass.yml
-10. k apply -f persistentVolumeClaim.yml
-11. k get pvc efs-claim - make sure pvc is in bound state (this requires oidc and its thumbprint)
-12. k apply -f deployment.yml
-13. watch kubectl get all
+- on wsl, aws cli v2 and auth using mark, tf, kubectl, eksctl
+- spin up tf-infra (vpc, efs, eks)
+- AWSACCOUNTNUMBER=$(aws sts get-caller-identity --query Account --output text)
+- eksctl create iamserviceaccount --cluster=eks1 --region us-east-1 --namespace=kube-system --name=efs-csi-controller-sa --override-existing-serviceaccounts --attach-policy-arn=arn:aws:iam::$AWSACCOUNTNUMBER:policy/EFSCSIControllerIAMPolicy --approve
+    This creates an IAM role and attaches a TF-made IAM policy, and a k8s ServiceAccount, both reference each other
+- kubectl apply -f efs_csi_driver.yaml - if you used eksctl above, remove the service account created in step 1 first
+- cd ../k8s
+- spin up tf-k8s (efs_cs_driver, )
 
     cleanup:
 1. delete cloudformation from eksctl
@@ -143,7 +135,6 @@ kubectl edit -n kube-system configmap/aws-auth
       username: devils
 
 or this does the same thing
-
 eksctl create iamidentitymapping --cluster test_eks_cluster --region=us-east-1 --arn arn:aws:iam::765981046280:user/devils --group system:masters --no-duplicate-arns
 
 here is an example aws-auth config map from the documentation

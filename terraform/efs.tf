@@ -7,7 +7,7 @@ resource "aws_efs_file_system" "efs" {
     transition_to_ia = "AFTER_30_DAYS"
   }
   tags = {
-    Name = "${var.project_name}_efs"
+    Name = "${var.project_name}_${var.env}_efs"
   }
 }
 
@@ -37,10 +37,10 @@ POLICY
 }
 
 resource "aws_security_group" "efs_sg" {
-  name   = "efs_sg"
+  name   = "${var.project_name}_${var.env}_efs_sg"
   vpc_id = aws_vpc.vpc.id
   tags = {
-    Name = "efs_sg"
+    Name = "${var.project_name}_${var.env}_efs_sg"
   }
 }
 

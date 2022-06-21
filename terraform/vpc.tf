@@ -56,7 +56,7 @@ resource "aws_subnet" "private_subnet" {
   cidr_block        = var.private_subnet_cidr[count.index]
   availability_zone = var.az[count.index]
   tags = {
-    Name                                                               = "${var.project_name}_${var.env}_private-subnet_${count.index + 1}"
+    Name                                                               = "${var.project_name}_${var.env}_private_subnet_${count.index + 1}"
     "kubernetes.io/cluster/${var.project_name}_${var.env}_eks_cluster" = "shared"
     "kubernetes.io/role/internal-elb"                                  = 1
   }

@@ -1,12 +1,22 @@
+data "terraform_remote_state" "efs_id" {
+  backend = "local"
+
+  config = {
+    path = "/mnt/c/Users/Nouri/repos/eks-efs/terraform/terraform.tfstate"
+  }
+}
+
 resource "kubernetes_storage_class" "efs_sc" {
   metadata {
     name = "efs-sc"
   }
 
+  storage_provisioner = "efs.csi.aws.com"
+
   parameters = {
     directoryPerms = "700"
 
-    fileSystemId = "fs-02efb1468487d0c4c"
+    fileSystemId = data.terraform_remote_state.efs_id.outputs.efs_id
 
     provisioningMode = "efs-ap"
   }

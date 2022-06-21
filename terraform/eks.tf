@@ -145,6 +145,7 @@ resource "aws_iam_policy" "eks_serviceaccount_policy" {
   })
 }
 
+# using eksctl to create this role
 # resource "aws_iam_role" "eks_serviceaccount_role" {
 #   name               = "${var.project_name}_eks_serviceaccount_role"
 #   assume_role_policy = <<EOF
@@ -172,34 +173,4 @@ resource "aws_iam_policy" "eks_serviceaccount_policy" {
 # resource "aws_iam_role_policy_attachment" "attachit" {
 #   policy_arn = aws_iam_policy.eks_serviceaccount_policy.arn
 #   role       = aws_iam_role.eks_serviceaccount_role.name
-# }
-
-# resource "aws_iam_role" "eks_fargate_role" {
-#   name = "${var.project_name}_${var.env}_eks_fargate_role"
-
-#   assume_role_policy = jsonencode({
-#     Statement = [{
-#       Action = "sts:AssumeRole"
-#       Effect = "Allow"
-#       Principal = {
-#         Service = "eks-fargate-pods.amazonaws.com"
-#       }
-#     }]
-#     Version = "2012-10-17"
-#   })
-# }
-
-# resource "aws_iam_role_policy_attachment" "AmazonEKSFargatePodExecutionRolePolicy_attachment" {
-#   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSFargatePodExecutionRolePolicy"
-#   role       = aws_iam_role.eks_fargate_role.name
-# }
-
-# resource "aws_eks_fargate_profile" "eks_fargate_profile" {
-#   cluster_name           = aws_eks_cluster.eks_cluster.name
-#   fargate_profile_name   = "${var.project_name}_${var.env}_eks_fargate_profile"
-#   pod_execution_role_arn = aws_iam_role.eks_fargate_role.arn
-#   subnet_ids             = aws_subnet.private_subnet[*].id
-#   selector {
-#     namespace = "test-ns"
-#   }
 # }
