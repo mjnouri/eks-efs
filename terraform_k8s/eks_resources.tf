@@ -1,4 +1,7 @@
 data "terraform_remote_state" "efs_id" {
+  # depends_on = [kubernetes_cluster_role.efs_csi_external_provisioner_role, kubernetes_cluster_role_binding.efs_csi_provisioner_binding, kubernetes_deployment.efs_csi_controller, kubernetes_daemonset.efs_csi_node, kubernetes_csi_driver.efs_csi_aws_com]
+  depends_on = [kubernetes_cluster_role.efs_csi_external_provisioner_role, kubernetes_cluster_role_binding.efs_csi_provisioner_binding, kubernetes_deployment.efs_csi_controller, kubernetes_daemonset.efs_csi_node]
+
   backend = "local"
 
   config = {
@@ -7,6 +10,8 @@ data "terraform_remote_state" "efs_id" {
 }
 
 resource "kubernetes_storage_class" "efs_sc" {
+  depends_on = [data.terraform_remote_state.efs_id]
+
   metadata {
     name = "efs-sc"
   }
@@ -23,6 +28,8 @@ resource "kubernetes_storage_class" "efs_sc" {
 }
 
 resource "kubernetes_persistent_volume_claim" "efs_claim" {
+  depends_on = [kubernetes_storage_class.efs_sc]
+
   metadata {
     name = "efs-claim"
   }
@@ -41,6 +48,8 @@ resource "kubernetes_persistent_volume_claim" "efs_claim" {
 }
 
 resource "kubernetes_deployment" "ubuntu_deployment" {
+  depends_on = [kubernetes_persistent_volume_claim.efs_claim]
+
   metadata {
     name = "ubuntu-deployment"
 

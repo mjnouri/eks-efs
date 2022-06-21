@@ -63,23 +63,21 @@ Deploy a sample containerized app using EFS storage to EKS
 - add that you got efs csi config files with kubectl kustomize "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.2"
 
     steps:
-- on wsl, aws cli v2 and auth using mark, tf, kubectl, eksctl
+- aws cli and auth, tf, kubectl, eksctl
 - spin up tf-infra (vpc, efs, eks)
 - AWSACCOUNTNUMBER=$(aws sts get-caller-identity --query Account --output text)
 - eksctl create iamserviceaccount --cluster=eks1 --region us-east-1 --namespace=kube-system --name=efs-csi-controller-sa --override-existing-serviceaccounts --attach-policy-arn=arn:aws:iam::$AWSACCOUNTNUMBER:policy/EFSCSIControllerIAMPolicy --approve
     This creates an IAM role and attaches a TF-made IAM policy, and a k8s ServiceAccount, both reference each other
-- kubectl apply -f efs_csi_driver.yaml - if you used eksctl above, remove the service account created in step 1 first
 - cd ../k8s
-- spin up tf-k8s (efs_cs_driver, )
+- spin up tf-k8s (efs_cs_driver, ..., sc, pvc, deployment)
 
     cleanup:
-1. delete cloudformation from eksctl
-2. terraform destroy -auto-approve
+1. cd k8s -> terraform destroy -auto-approve
+2. destroy eksctl cloudformation role
+3. cd terraform -> terraform destroy -auto-approve
 
     automation:
 3. this makes an iam role with trusted entity policy, and k8s serviceaccount
-6. deploy all this helm with vanilla k8s yml
-7. get tf output of efs id, place in storageClass.yml (refer to previous project on how this is done)
 
     automation notes:
 5.

@@ -63,6 +63,8 @@ resource "kubernetes_cluster_role" "efs_csi_external_provisioner_role" {
 }
 
 resource "kubernetes_cluster_role_binding" "efs_csi_provisioner_binding" {
+  depends_on = [kubernetes_cluster_role.efs_csi_external_provisioner_role]
+
   metadata {
     name = "efs-csi-provisioner-binding"
 
@@ -85,6 +87,8 @@ resource "kubernetes_cluster_role_binding" "efs_csi_provisioner_binding" {
 }
 
 resource "kubernetes_deployment" "efs_csi_controller" {
+  depends_on = [kubernetes_cluster_role_binding.efs_csi_provisioner_binding]
+
   metadata {
     name      = "efs-csi-controller"
     namespace = "kube-system"
@@ -209,6 +213,8 @@ resource "kubernetes_deployment" "efs_csi_controller" {
 }
 
 resource "kubernetes_daemonset" "efs_csi_node" {
+  depends_on = [kubernetes_cluster_role_binding.efs_csi_provisioner_binding]
+
   metadata {
     name      = "efs-csi-node"
     namespace = "kube-system"
@@ -431,17 +437,19 @@ resource "kubernetes_daemonset" "efs_csi_node" {
   }
 }
 
-resource "kubernetes_csi_driver" "efs_csi_aws_com" {
-  metadata {
-    name = "efs.csi.aws.com"
+# Got an error saying efs.csi.aws.com was already installed. Left this out and everything still worked, but understand why.
+# resource "kubernetes_csi_driver" "efs_csi_aws_com" {
+#   depends_on = [kubernetes_daemonset.efs_csi_node]
 
-    annotations = {
-      "helm.sh/hook" = "pre-install, pre-upgrade"
+#   metadata {
+#     name = "efs.csi.aws.com"
 
-      "helm.sh/hook-delete-policy" = "before-hook-creation"
+#     annotations = {
+#       "helm.sh/hook" = "pre-install, pre-upgrade"
 
-      "helm.sh/resource-policy" = "keep"
-    }
-  }
-}
+#       "helm.sh/hook-delete-policy" = "before-hook-creation"
 
+#       "helm.sh/resource-policy" = "keep"
+#     }
+#   }
+# }
