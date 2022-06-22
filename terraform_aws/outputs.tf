@@ -5,3 +5,7 @@ output "eks_api_endpoint" {
 output "efs_id" {
   value = aws_efs_file_system.efs.id
 }
+
+output "eks_serviceaccount_role" {
+  value = aws_iam_role.eks_serviceaccount_role.arn
+}

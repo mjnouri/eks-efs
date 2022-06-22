@@ -145,32 +145,38 @@ resource "aws_iam_policy" "eks_serviceaccount_policy" {
   })
 }
 
-# using eksctl to create this role
-# resource "aws_iam_role" "eks_serviceaccount_role" {
-#   name               = "${var.project_name}_eks_serviceaccount_role"
-#   assume_role_policy = <<EOF
-# {
-#   "Version": "2012-10-17",
-#   "Statement": [
-#     {
-#       "Effect": "Allow",
-#       "Principal": {
-#         "Federated": "arn:aws:iam::765981046280:${local.eks_oidc}"
-#       },
-#       "Action": "sts:AssumeRoleWithWebIdentity",
-#       "Condition": {
-#         "StringEquals": {
-#           "${local.eks_oidc}:aud": "sts.amazonaws.com",
-#           "${local.eks_oidc}:sub": "system:serviceaccount:kube-system:efs-csi-controller-sa"
-#         }
-#       }
-#     }
-#   ]
-# }
-# EOF
-# }
+data "aws_caller_identity" "aws_account_id" {}
 
-# resource "aws_iam_role_policy_attachment" "attachit" {
-#   policy_arn = aws_iam_policy.eks_serviceaccount_policy.arn
-#   role       = aws_iam_role.eks_serviceaccount_role.name
-# }
+locals {
+  aws_account_id = data.aws_caller_identity.aws_account_id.account_id
+  eks_oidc = trimprefix(aws_eks_cluster.eks_cluster.identity[0].oidc[0].issuer, "https://")
+}
+
+resource "aws_iam_role" "eks_serviceaccount_role" {
+  name               = "${var.project_name}_${var.env}_eks_serviceaccount_role"
+  assume_role_policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Federated": "arn:aws:iam::${local.aws_account_id}:oidc-provider/${local.eks_oidc}"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+                "StringEquals": {
+                    "${local.eks_oidc}:aud": "sts.amazonaws.com",
+                    "${local.eks_oidc}:sub": "system:serviceaccount:kube-system:efs-csi-controller-sa"
+                }
+            }
+        }
+    ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "attachit" {
+  policy_arn = aws_iam_policy.eks_serviceaccount_policy.arn
+  role       = aws_iam_role.eks_serviceaccount_role.name
+}

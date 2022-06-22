@@ -5,7 +5,7 @@ data "terraform_remote_state" "efs_id" {
   backend = "local"
 
   config = {
-    path = "/mnt/c/Users/Nouri/repos/eks-efs/terraform/terraform.tfstate"
+    path = "../terraform_aws/terraform.tfstate"
   }
 }
 

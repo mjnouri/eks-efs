@@ -1,14 +1,25 @@
-# using eksctl to create this ServiceAccount
-# resource "kubernetes_service_account" "efs_csi_controller_sa" {
-#   metadata {
-#     name      = "efs-csi-controller-sa"
-#     namespace = "kube-system"
+data "terraform_remote_state" "eks_serviceaccount_role" {
+  backend = "local"
 
-#     labels = {
-#       "app.kubernetes.io/name" = "aws-efs-csi-driver"
-#     }
-#   }
-# }
+  config = {
+    path = "../terraform_aws/terraform.tfstate"
+  }
+}
+
+resource "kubernetes_service_account" "efs_csi_controller_sa" {
+  metadata {
+    name      = "efs-csi-controller-sa"
+    namespace = "kube-system"
+
+    annotations = {
+      "eks.amazonaws.com/role-arn" = data.terraform_remote_state.eks_serviceaccount_role.outputs.eks_serviceaccount_role
+    }
+  }
+
+  # secret {
+  #   name = "efs-csi-controller-sa-token-bxmlg"
+  # }
+}
 
 resource "kubernetes_cluster_role" "efs_csi_external_provisioner_role" {
   metadata {

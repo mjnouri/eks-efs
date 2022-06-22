@@ -76,52 +76,6 @@ Deploy a sample containerized app using EFS storage to EKS
 2. destroy eksctl cloudformation role
 3. cd terraform -> terraform destroy -auto-approve
 
-    automation:
-3. this makes an iam role with trusted entity policy, and k8s serviceaccount
-
-    automation notes:
-5.
-    aws iam role:
-name                eksctl-eks1-addon-iamserviceaccount-kube-sys-Role1-128WXYDV011BM
-policy attached     EFSCSIControllerIAMPolicy
-trust policy        ...
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "Federated": "arn:aws:iam::765981046280:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/C3DD7659EDACE01DBB8BBF96E953C97F"
-            },
-            "Action": "sts:AssumeRoleWithWebIdentity",
-            "Condition": {
-                "StringEquals": {
-                    "oidc.eks.us-east-1.amazonaws.com/id/C3DD7659EDACE01DBB8BBF96E953C97F:sub": "system:serviceaccount:kube-system:efs-csi-controller-sa",
-                    "oidc.eks.us-east-1.amazonaws.com/id/C3DD7659EDACE01DBB8BBF96E953C97F:aud": "sts.amazonaws.com"
-                }
-            }
-        }
-    ]
-}
-
-    eks sa:
-name                efs-csi-controller-sa
-yaml                ...
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  annotations:
-    eks.amazonaws.com/role-arn: arn:aws:iam::765981046280:role/eksctl-eks1-addon-iamserviceaccount-kube-sys-Role1-128WXYDV011BM
-  creationTimestamp: "2022-06-08T17:04:41Z"
-  labels:
-    app.kubernetes.io/managed-by: eksctl
-  name: efs-csi-controller-sa
-  namespace: kube-system
-  resourceVersion: "17003"
-  uid: 52fbc43a-6225-4197-ad42-7010f963e50f
-secrets:
-- name: efs-csi-controller-sa-token-gnzzk
-
 ---
 
 to add other IAM users access to cluster
