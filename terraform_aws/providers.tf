@@ -1,8 +1,8 @@
 terraform {
   #   backend "s3" {
-  #     bucket = "bucket_name"
-  #     key    = "tf-state/eks-deployment/terraform.tfstate"
-  #     region = "us-east-1"
+  #     bucket = var.bucket_name
+  #     key    = "terraform-state/eks-efs/infra/terraform.tfstate"
+  #     region = var.region
   #   }
   required_providers {
     aws = {
@@ -17,7 +17,7 @@ terraform {
 }
 
 provider "aws" {
-  region = "us-east-1"
+  region = var.region
   default_tags {
     tags = {
       owner        = var.owner

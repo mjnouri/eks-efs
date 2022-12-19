@@ -109,38 +109,38 @@ resource "aws_iam_policy" "eks_serviceaccount_policy" {
   description = "Grant access to EFS Access Point"
 
   policy = jsonencode({
-    "Version":"2012-10-17",
-    "Statement":[
-       {
-          "Effect":"Allow",
-          "Action":[
-             "elasticfilesystem:DescribeAccessPoints",
-             "elasticfilesystem:DescribeFileSystems"
-          ],
-          "Resource":"*"
-       },
-       {
-          "Effect":"Allow",
-          "Action":[
-             "elasticfilesystem:CreateAccessPoint"
-          ],
-          "Resource":"*",
-          "Condition":{
-             "StringLike":{
-                "aws:RequestTag/efs.csi.aws.com/cluster":"true"
-             }
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "elasticfilesystem:DescribeAccessPoints",
+          "elasticfilesystem:DescribeFileSystems"
+        ],
+        "Resource" : "*"
+      },
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "elasticfilesystem:CreateAccessPoint"
+        ],
+        "Resource" : "*",
+        "Condition" : {
+          "StringLike" : {
+            "aws:RequestTag/efs.csi.aws.com/cluster" : "true"
           }
-       },
-       {
-          "Effect":"Allow",
-          "Action":"elasticfilesystem:DeleteAccessPoint",
-          "Resource":"*",
-          "Condition":{
-             "StringEquals":{
-                "aws:ResourceTag/efs.csi.aws.com/cluster":"true"
-             }
+        }
+      },
+      {
+        "Effect" : "Allow",
+        "Action" : "elasticfilesystem:DeleteAccessPoint",
+        "Resource" : "*",
+        "Condition" : {
+          "StringEquals" : {
+            "aws:ResourceTag/efs.csi.aws.com/cluster" : "true"
           }
-       }
+        }
+      }
     ]
   })
 }
@@ -149,7 +149,7 @@ data "aws_caller_identity" "aws_account_id" {}
 
 locals {
   aws_account_id = data.aws_caller_identity.aws_account_id.account_id
-  eks_oidc = trimprefix(aws_eks_cluster.eks_cluster.identity[0].oidc[0].issuer, "https://")
+  eks_oidc       = trimprefix(aws_eks_cluster.eks_cluster.identity[0].oidc[0].issuer, "https://")
 }
 
 resource "aws_iam_role" "eks_serviceaccount_role" {

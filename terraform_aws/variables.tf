@@ -1,3 +1,7 @@
+variable "region" {
+  default = "us-east-1"
+}
+
 variable "owner" {
   default = "mark"
 }
@@ -8,6 +12,10 @@ variable "project_name" {
 
 variable "env" {
   default = "dev"
+}
+
+variable "bucket_name" {
+  default = "YOUR_BUCKET_NAME_HERE"
 }
 
 variable "eks_cluster_name" {
