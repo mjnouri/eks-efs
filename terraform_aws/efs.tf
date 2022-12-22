@@ -11,31 +11,6 @@ resource "aws_efs_file_system" "efs" {
   }
 }
 
-# resource "aws_efs_file_system_policy" "efs_policy" {
-#   file_system_id = aws_efs_file_system.efs.id
-#   policy         = <<POLICY
-# {
-#    "Version":"2012-10-17",
-#    "Id":"EFSPolicy",
-#    "Statement":[
-#       {
-#          "Sid":"AllowEKSWorkers",
-#          "Principal":{
-#             "AWS":"*"
-#          },
-#          "Effect":"Allow",
-#          "Action":[
-#             "elasticfilesystem:ClientMount",
-#             "elasticfilesystem:ClientRootAccess",
-#             "elasticfilesystem:ClientWrite"
-#          ],
-#          "Resource":"${aws_efs_file_system.efs.arn}"
-#       }
-#    ]
-# }
-# POLICY
-# }
-
 resource "aws_efs_file_system_policy" "efs_policy" {
   file_system_id = aws_efs_file_system.efs.id
   policy         = <<POLICY
@@ -46,7 +21,7 @@ resource "aws_efs_file_system_policy" "efs_policy" {
       {
          "Sid":"AllowEKSWorkers",
          "Principal":{
-            "AWS":"${aws_iam_role.eks_nodes_role.arn}"
+            "AWS":"*"
          },
          "Effect":"Allow",
          "Action":[
@@ -61,7 +36,30 @@ resource "aws_efs_file_system_policy" "efs_policy" {
 POLICY
 }
 
-
+# resource "aws_efs_file_system_policy" "efs_policy" {
+#   file_system_id = aws_efs_file_system.efs.id
+#   policy         = <<POLICY
+# {
+#    "Version":"2012-10-17",
+#    "Id":"EFSPolicy",
+#    "Statement":[
+#       {
+#          "Sid":"AllowEKSWorkers",
+#          "Principal":{
+#             "AWS":"${aws_iam_role.eks_nodes_role.arn}"
+#          },
+#          "Effect":"Allow",
+#          "Action":[
+#             "elasticfilesystem:ClientMount",
+#             "elasticfilesystem:ClientRootAccess",
+#             "elasticfilesystem:ClientWrite"
+#          ],
+#          "Resource":"${aws_efs_file_system.efs.arn}"
+#       }
+#    ]
+# }
+# POLICY
+# }
 
 resource "aws_security_group" "efs_sg" {
   name   = "${var.project_name}_${var.env}_efs_sg"
