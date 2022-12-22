@@ -1,17 +1,17 @@
-variable "region" {
-  default = "us-east-1"
-}
-
 variable "owner" {
-  default = "mark"
+  default = "OWNER"
 }
 
 variable "project_name" {
-  default = "helm_testing"
+  default = "PROJECT_NAME"
 }
 
 variable "env" {
-  default = "dev"
+  default = "ENV"
+}
+
+variable "region" {
+  default = "us-east-1"
 }
 
 variable "bucket_name" {

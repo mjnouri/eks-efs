@@ -1,9 +1,9 @@
 terraform {
-  #   backend "s3" {
-  #     bucket = var.bucket_name
-  #     key    = "terraform-state/eks-efs/infra/terraform.tfstate"
-  #     region = var.region
-  #   }
+  # backend "s3" {
+  #   bucket = "BUCKET_NAME_HERE"
+  #   key    = "terraform-state/eks-efs/infra/terraform.tfstate"
+  #   region = "REGION_HERE"
+  # }
   required_providers {
     aws = {
       source  = "hashicorp/aws"
