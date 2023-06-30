@@ -29,7 +29,7 @@ resource "aws_iam_role_policy_attachment" "AmazonEKSServicePolicy_attachment" {
 resource "aws_eks_cluster" "eks_cluster" {
   name     = var.eks_cluster_name
   role_arn = aws_iam_role.eks_cluster_role.arn
-  version  = "1.21"
+  version  = "1.27"
   vpc_config {
     subnet_ids              = [aws_subnet.public_subnet[0].id, aws_subnet.public_subnet[1].id, aws_subnet.public_subnet[2].id]
     endpoint_private_access = "true"
